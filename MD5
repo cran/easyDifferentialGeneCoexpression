@@ -1,6 +1,6 @@
-f948a6d4342500cf2138b9b165001c81 *DESCRIPTION
+13f87dc56b042b3ca2d56d1a2996a82d *DESCRIPTION
 622ce25db22381a9990ccf19afef6593 *NAMESPACE
-92c573aa56e068141956a5be812a3a91 *R/easyDifferentialGeneCoexpression.r
+8f1b51c8bb5a0ff0ad507e5ef33354be *R/easyDifferentialGeneCoexpression.r
 04200b2b462e70f892eab9779d773b15 *build/vignette.rds
 8f69fe8bc1d4c847a52c3b665acda5e3 *inst/doc/easyDifferentialGeneCoexpression.R
 e0abead590d98087799bd3436b1bcc02 *inst/doc/easyDifferentialGeneCoexpression.Rmd

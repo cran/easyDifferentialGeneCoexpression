@@ -11,16 +11,18 @@ geoPlatformAnnotationsDownload <- function(platformID, verbose=FALSE) {
 
             platform_ann_df <- NULL
             
-
             # check   URL
             checked_html_text_url <- "EMPTY_STRING"
             checked_html_text <- "https://www.ncbi.nlm.nih.gov/geo/"
-            checked_html_text_url <- lapply(checked_html_text, geneExpressionFromGEO::readUrl)
+            # checked_html_text_url <- lapply(checked_html_text, geneExpressionFromGEO::readUrl)
+            checked_html_text_url <- geneExpressionFromGEO::readUrl(checked_html_text)
             if(verbose == TRUE) cat("Checked URL ", checked_html_text, "\n", sep="")
             
             this_complete_url <- "EMPTY_STRING"
             this_complete_url_text <- paste0("https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=", platformID, "&view=data&form=text&targ=self")
-            this_complete_url <- lapply(this_complete_url_text, geneExpressionFromGEO::readUrl)
+            # this_complete_url <- lapply(this_complete_url_text, geneExpressionFromGEO::readUrl)
+            this_complete_url <- geneExpressionFromGEO::readUrl(this_complete_url_text)
+            
             if(verbose == TRUE) cat("Checked URL ", this_complete_url_text, "\n", sep="")
             
             if(all(checked_html_text_url == "EMPTY_STRING")) {
@@ -35,6 +37,7 @@ geoPlatformAnnotationsDownload <- function(platformID, verbose=FALSE) {
                     
             } else {
 
+                 if(verbose == TRUE) cat("Calling readGEOAnn()...", sep="")
                 platform_ann <- annotate::readGEOAnn(GEOAccNum = platformID)
                 platform_ann_df <- as.data.frame(platform_ann, stringsAsFactors=FALSE)
                 return(platform_ann_df)
@@ -62,7 +65,8 @@ geoDataDownload <- function(GSE_code, verbose=FALSE){
             GSE_code_for_url <- paste0(GSE_code_for_url, "nnn")
             complete_url <- paste0("https://ftp.ncbi.nlm.nih.gov/geo/series/", GSE_code_for_url, "/", GSE_code)
            
-           checked_html_text_url <- lapply(complete_url, geneExpressionFromGEO::readUrl)
+           # checked_html_text_url <- lapply(complete_url, geneExpressionFromGEO::readUrl)
+           checked_html_text_url <- geneExpressionFromGEO::readUrl(complete_url)
             
             if(all(checked_html_text_temp == "EMPTY_STRING")) {
          
@@ -134,8 +138,8 @@ fromProbesetToGeneSymbol <- function(thisProbeset, thisPlatform,  this_platform_
 #' @return a vector of probesets
 probesetRetrieval <- function(probesets_or_gene_symbols, csv_file_name, platformCode, verbose=FALSE) {
 
-        probesets_flag <- grepl("probeset|Probeset|PROBESET", probesets_or_gene_symbols) %>% any()
-        gene_symbols_flag <- grepl("symbol|SYMBOL|GENE_SYMBOL|gene_symbol", probesets_or_gene_symbols) %>% any()
+        probesets_flag <- grepl("probeset|probesets", probesets_or_gene_symbols) %>% any()
+        gene_symbols_flag <- grepl("symbol|gene_symbol|symbols|gene|symbols", probesets_or_gene_symbols) %>% any()
 
         
         thisGEOplatformJetSetCode <- NULL
@@ -272,10 +276,11 @@ easyDifferentialGeneCoexpression <- function(list_of_probesets_to_select, GSE_co
 
         if(verbose == TRUE) cat("Coexpression significance threshold: ", SIGNIFICANCE_THRESHOLD, "\n", sep="")
         
+        significant_coexpressed_probeset_pairs <- NULL
         significant_coexpressed_probeset_pairs <- coexpr_results[(order(coexpr_results$"p.diffcor") & coexpr_results$"p.diffcor" < SIGNIFICANCE_THRESHOLD),c("Gene.1", "Gene.2", "p.diffcor", "q.diffcor", "cor.diff")] %>% unique()
         # %>% head()
         
-        if(verbose == TRUE) cat("significant_coexpressed_probeset_pairs %>% nrow(): ", significant_coexpressed_probeset_pairs %>% nrow(), "\n")
+        if(verbose == TRUE) cat("significant_coexpressed_probeset_pairs number: ", significant_coexpressed_probeset_pairs %>% nrow(), "\n")
         
         if(significant_coexpressed_probeset_pairs %>% nrow() >= 1) { 
         
@@ -298,22 +303,23 @@ easyDifferentialGeneCoexpression <- function(list_of_probesets_to_select, GSE_co
             pb <- 1
             significant_coexpressed_probeset_pairs$geneSymbolLeft <- ""
             significant_coexpressed_probeset_pairs$geneSymbolRight <- ""
+            if(verbose == TRUE) cat("Associating the probesets to the gene symbols...\n")
+            verboseFlagProbesetsGenes <- FALSE
             for(pb in 1:(significant_coexpressed_probeset_pairs %>% nrow()))    {
-                significant_coexpressed_probeset_pairs[pb,]$geneSymbolLeft <- fromProbesetToGeneSymbol(significant_coexpressed_probeset_pairs[pb,]$"Gene.1", thisGEOplatform,  platform_ann_df, TRUE)
-                significant_coexpressed_probeset_pairs[pb,]$geneSymbolRight<- fromProbesetToGeneSymbol(significant_coexpressed_probeset_pairs[pb,]$"Gene.2", thisGEOplatform, platform_ann_df, TRUE)
+                significant_coexpressed_probeset_pairs[pb,]$geneSymbolLeft <- fromProbesetToGeneSymbol(significant_coexpressed_probeset_pairs[pb,]$"Gene.1", thisGEOplatform,  platform_ann_df, verboseFlagProbesetsGenes)
+                significant_coexpressed_probeset_pairs[pb,]$geneSymbolRight<- fromProbesetToGeneSymbol(significant_coexpressed_probeset_pairs[pb,]$"Gene.2", thisGEOplatform, platform_ann_df, verboseFlagProbesetsGenes)
                 
             }
             
             colnames(significant_coexpressed_probeset_pairs)[1] <- c("probesetLeft")
             colnames(significant_coexpressed_probeset_pairs)[2] <- c("probesetRight")
-            
+
+             cat("\n : : : : : : : : : : : : : : : : Differential coexpression analysis results  : : : : : : : : : : : : : : : : \n ")
             if(verbose == TRUE) {
-                cat("\nTop coexpresseed pairs of genes based on cor.diff:\n")
+                cat("\nSignificant top coexpresseed pairs of genes based on p-value difference (p.diffcor < ", SIGNIFICANCE_THRESHOLD,"):\n\n", sep="")
                 print(significant_coexpressed_probeset_pairs[,c("geneSymbolLeft", "geneSymbolRight",  "p.diffcor")])
-                cat("\n\n") 
+                cat("\n") 
             }
-            
-            return(significant_coexpressed_probeset_pairs)
         
         } else {
         
@@ -322,7 +328,12 @@ easyDifferentialGeneCoexpression <- function(list_of_probesets_to_select, GSE_co
                 cat(list_of_probesets_to_select, sep=", ")
                 cat(") in the ",  GSE_code," dataset\n", sep="")
             }
+            
+            significant_coexpressed_probeset_pairs <- NULL
         
         }
+
+      cat(" : : : : : : : : : : : : : : : : Differential coexpression analysis end  : : : : : : : : : : : : : : : : \n ")
+      return(significant_coexpressed_probeset_pairs)        
 
 }
