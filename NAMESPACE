@@ -1,5 +1,4 @@
 exportPattern( "." )
-import("Matrix")
 importFrom("GEOquery", "getGEO")
 importFrom("geneExpressionFromGEO", "dec_two")
 importFrom("geneExpressionFromGEO", "readUrl")

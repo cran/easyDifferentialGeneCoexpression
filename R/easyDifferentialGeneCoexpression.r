@@ -277,8 +277,11 @@ easyDifferentialGeneCoexpression <- function(list_of_probesets_to_select, GSE_co
         if(verbose == TRUE) cat("Coexpression significance threshold: ", SIGNIFICANCE_THRESHOLD, "\n", sep="")
         
         significant_coexpressed_probeset_pairs <- NULL
-        significant_coexpressed_probeset_pairs <- coexpr_results[(order(coexpr_results$"p.diffcor") & coexpr_results$"p.diffcor" < SIGNIFICANCE_THRESHOLD),c("Gene.1", "Gene.2", "p.diffcor", "q.diffcor", "cor.diff")] %>% unique()
+        significant_coexpressed_probeset_pairs_TEMP <- coexpr_results[(order(coexpr_results$"p.diffcor") & coexpr_results$"p.diffcor" < SIGNIFICANCE_THRESHOLD),c("Gene.1", "Gene.2", "p.diffcor", "q.diffcor", "cor.diff")] %>% unique()
         # %>% head()
+        
+        significant_coexpressed_probeset_pairs_TEMP_ordered <- significant_coexpressed_probeset_pairs_TEMP[order(significant_coexpressed_probeset_pairs_TEMP$"p.diffcor"), ]
+        significant_coexpressed_probeset_pairs <- significant_coexpressed_probeset_pairs_TEMP_ordered
         
         if(verbose == TRUE) cat("significant_coexpressed_probeset_pairs number: ", significant_coexpressed_probeset_pairs %>% nrow(), "\n")
         
