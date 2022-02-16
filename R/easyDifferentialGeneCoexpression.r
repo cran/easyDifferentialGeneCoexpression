@@ -202,6 +202,7 @@ probesetRetrieval <- function(probesets_or_gene_symbols, csv_file_name, platform
 #' @param featureNameToDiscriminateConditions name of the feature of the dataset that contains the two conditions to investigate
 #' @param firstConditionName name of the first condition in the feature to discriminate (for example, "healthy")
 #' @param secondConditionName name of the second condition in the feature to discriminate (for example, "cancer")
+#' @param batchCorrection says if the script should perform the batch correction with limma::removeBatchEffect() or not
 #' @param verbose prints all the intermediate message to standard output or not
 #' @export
 #' @import annotate diffcoexp Biobase
@@ -210,9 +211,10 @@ probesetRetrieval <- function(probesets_or_gene_symbols, csv_file_name, platform
 #' 
 #' probesetList <- c("200738_s_at", "217356_s_at", "206686_at")
 #' verboseFlag <- "TRUE"
+#' batchCorrection <- "TRUE"
 #' signDiffCoexpressGenePairs <- easyDifferentialGeneCoexpression(probesetList, 
 #' "GSE3268", "description", "Normal", "Tumor", verboseFlag)
-easyDifferentialGeneCoexpression <- function(list_of_probesets_to_select, GSE_code, featureNameToDiscriminateConditions, firstConditionName, secondConditionName, verbose=FALSE) 
+easyDifferentialGeneCoexpression <- function(list_of_probesets_to_select, GSE_code, featureNameToDiscriminateConditions, firstConditionName, secondConditionName, batchCorrection=TRUE, verbose=FALSE) 
 {
 
         SIGNIFICANCE_THRESHOLD <- 0.005
@@ -236,21 +238,62 @@ easyDifferentialGeneCoexpression <- function(list_of_probesets_to_select, GSE_co
 
         # random shuffle
         gset_expression <- gset_expression[sample(nrow(gset_expression)),] 
+        gset_expression_original <- gset_expression
 
         # healthy_controls_gene_expression <- gset_expression[, grepl("control", gset$"characteristics_ch1", fixed=TRUE)] 
         # patients_gene_expression <- gset_expression[, grepl("monocytopenia", gset$"characteristics_ch1", fixed=TRUE)] 
 
         if(verbose == TRUE)  {
-            cat("firstConditionName: ")
-            cat(firstConditionName, "\n")
-            cat("secondConditionName: ")
-            cat(secondConditionName, "\n") 
+            cat("firstConditionName: ", firstConditionName, "\t")
+            cat("secondConditionName: ", secondConditionName, "\n") 
         }
+        
+        gset_expression_colmeans_mean <- gset_expression %>%  colMeans() %>% mean()
+        gset_expression_colmeans_sd <-gset_expression %>%  colMeans() %>% sd()
+        cat()
+        
+        if(verbose == TRUE)  {
+          cat("mean of the average gene expression per patient profile +- standard deviation = ", gset_expression_colmeans_mean, " +- ", gset_expression_colmeans_sd,"\n", sep="")
+        }
+        
+        if(batchCorrection == TRUE) {
+        
+            if(verbose == TRUE) cat("batch correction:\n")        
+            firstConditionColumns <- gset_expression[, grepl(firstConditionName, gsetPhenoDataDF[, featureNameToDiscriminateConditions]
+            , fixed=TRUE)]  %>% colnames()
+            secondConditionColumns <- gset_expression[, grepl(secondConditionName, gsetPhenoDataDF[, featureNameToDiscriminateConditions]
+            , fixed=TRUE)]  %>% colnames()
+            batch <- gset_expression %>% colnames() %in% firstConditionColumns
+
+            for(i in seq(1:length(batch))) {
+            
+                if(batch[i] == TRUE)  batch[i] <- firstConditionName
+                else batch[i] <- secondConditionName
+            }
+            
+            cat("batches: ", firstConditionName, " and ", secondConditionName, "\n", sep="")
+            
+            output_batch_correction <- limma::removeBatchEffect(gset_expression, batch)
+            
+            output_batch_correction_mean <- output_batch_correction %>%  colMeans() %>% mean()
+            output_batch_correction_sd <-output_batch_correction %>%  colMeans() %>% sd()
+            cat()
+            
+            if(verbose == TRUE)  {
+              cat("mean of the average gene expression per patient profile after batch correction +- standard deviation = ", output_batch_correction_mean, " +- ", output_batch_correction_sd,"\n", sep="")
+            }
+            
+            
+            
+            gene_expression <- output_batch_correction
+        }
+        
         
         first_condition_gene_expression <- gset_expression[, grepl(firstConditionName, gsetPhenoDataDF[, featureNameToDiscriminateConditions]
         , fixed=TRUE)] 
         second_condition_gene_expression <- gset_expression[, grepl(secondConditionName, gsetPhenoDataDF[, featureNameToDiscriminateConditions]
         , fixed=TRUE)] 
+        
         
         if(verbose == TRUE) {
             cat("first_condition_gene_expression number of samples: ")

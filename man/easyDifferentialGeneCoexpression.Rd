@@ -10,6 +10,7 @@ easyDifferentialGeneCoexpression(
   featureNameToDiscriminateConditions,
   firstConditionName,
   secondConditionName,
+  batchCorrection = TRUE,
   verbose = FALSE
 )
 }
@@ -24,6 +25,8 @@ easyDifferentialGeneCoexpression(
 
 \item{secondConditionName}{name of the second condition in the feature to discriminate (for example, "cancer")}
 
+\item{batchCorrection}{says if the script should perform the batch correction with limma::removeBatchEffect() or not}
+
 \item{verbose}{prints all the intermediate message to standard output or not}
 }
 \value{
@@ -36,6 +39,7 @@ Function that computes the differential coexpression of a list of probesets in a
 
 probesetList <- c("200738_s_at", "217356_s_at", "206686_at")
 verboseFlag <- "TRUE"
+batchCorrection <- "TRUE"
 signDiffCoexpressGenePairs <- easyDifferentialGeneCoexpression(probesetList, 
 "GSE3268", "description", "Normal", "Tumor", verboseFlag)
 }
