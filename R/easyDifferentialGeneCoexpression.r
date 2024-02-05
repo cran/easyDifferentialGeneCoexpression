@@ -220,7 +220,31 @@ easyDifferentialGeneCoexpression <- function(list_of_probesets_to_select, GSE_co
         SIGNIFICANCE_THRESHOLD <- 0.005
 
         # gene expression download
-        gset <- geoDataDownload(GSE_code)
+        gset <- NULL
+
+        time_limit <- 3
+
+        setTimeLimit(cpu = time_limit, elapsed = time_limit, transient = TRUE)
+        on.exit({
+            setTimeLimit(cpu = Inf, elapsed = Inf, transient = FALSE)
+        })
+
+        tryCatch({
+
+             # gene expression download
+             gset <- geoDataDownload(GSE_code)
+
+        }, error = function(e) {
+            if (grepl("Error: reached elapsed time limit|reached CPU time limit", e$message)) {
+            # we reached timeout, apply some alternative method or do something else
+                gset <- NULL
+            }
+            # else {
+            # error not related to timeout
+            # stop(e)
+            # }
+        })
+
         if(is.null(gset)) {
         
                 if(verbose == TRUE) cat("It was impossible to download the dataset from GEO, the program will stop\n")
